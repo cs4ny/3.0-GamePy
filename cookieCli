@@ -1,0 +1,247 @@
+#BP
+#Cookie Clicker
+
+import pygame
+import math
+import random
+
+
+#GLOBAL
+COLOUR = [(255,255,255),(0,0,0),(96,96,96),
+          (255,0,0),(0,255,0),(0,0,255),
+          (255,255,0),(255,0,255),(255,120,0),(139,69,19)]
+
+WHITE = 0
+BLACK = 1
+GREY = 2
+RED = 3
+GREEN = 4
+BLUE = 5
+YELLOW = 6
+PURPLE = 7
+ORANGE =8
+BROWN = 9
+
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 450
+SCREEN_SIZE = (SCREEN_WIDTH,SCREEN_HEIGHT)
+
+#------------------------------------------------------------------------------------------
+#COOKIE CLASS
+class Cookie():
+    def __init__(self,x,y,width,height,dy,colour):
+        global SCREEN_WIDTH
+        global SCREEN_HEIGHT
+        
+        self.x = x
+        self.y = y
+        self.colour = colour
+        self.w = width
+        self.h = height
+        self.dy = dy
+
+    def update(self):
+        self.y += self.dy
+
+  
+    def draw(self,screen):
+        pygame.draw.ellipse(screen,COLOUR[self.colour],[self.x,self.y,self.w,self.h])
+
+    def getInfo(self):
+        return[self.x,self.y,self.width,self.height]
+
+
+
+#-----------------------------------------------------------------------------------------------
+#INO function
+def inO(mX,mY,O):
+    if mX >= O.x and mX <= O.x + O.w and mY >= O.y and mY <= O.y + O.h:
+        return True
+    else:
+        return False
+
+#------------------------------------------------------------------------------------------------
+#GAME CLASS
+class Game():
+    def __init__(self):
+        global SCREEN_WIDTH
+        global SCREEN_HEIGHT
+
+        #Initialize
+        pygame.init()
+        self.screen = pygame.display.set_mode(SCREEN_SIZE)
+        clock = pygame.time.Clock()
+
+        self.initialize()
+
+        loop = True
+        while loop:
+            # Process Events/ Game Logic/ Draw/ Pause
+            loop = self.processEvents()
+            self.runLogic()
+            self.displayFrame()
+            clock.tick(15)
+
+        pygame.quit()
+
+    def initialize(self):
+
+        #Frames
+        self.frame1 = True
+        self.frame2 = False
+
+        #FRAME1
+        #COOKIE
+        self.cookie = Cookie(SCREEN_WIDTH//2,SCREEN_HEIGHT//2,100,100,0,ORANGE)
+
+        #Score
+        self.score = 0
+        
+        #Click
+        self.aClick = False
+        self.aClick2 = False
+
+        #Timer
+        self.timer = 0
+
+        #Bunch of COOKIES
+        self.cookieL = []
+        self.cookieL.append(self.cookie)
+
+        #FRAME2:
+        self.pButton = Cookie(SCREEN_WIDTH//3,SCREEN_HEIGHT//2,150,100,0,GREEN)
+
+        
+
+
+    def processEvents(self):
+
+        loop = True
+
+        return loop
+
+    def runLogic(self):
+
+        if self.frame1:
+
+            # Mouse Position and Click
+            mousePosition = pygame.mouse.get_pos()
+            mouseX = mousePosition[0]
+            mouseY = mousePosition[1]
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    loop = False
+
+                # KeyDown
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    if inO(mouseX,mouseY,self.pButton):
+                        self.frame1 = False
+                        self.frame2 = True
+                            
+            
+
+        if self.frame2 :
+
+            # Mouse Position and Click
+            mousePosition = pygame.mouse.get_pos()
+            mouseX = mousePosition[0]
+            mouseY = mousePosition[1]
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    loop = False
+
+                # KeyDown
+                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+
+                    for cookies in self.cookieL:
+                        if inO(mouseX,mouseY,cookies):
+                            if cookies.colour == ORANGE:
+                                self.score += 1
+                                self.aClick = False
+                                self.cookie.w += 10
+                                self.cookie.h += 10
+                                self.cookie.x -= 5
+                            if  cookies.colour == YELLOW:
+                                self.score += 10
+                                self.cookieL.remove(cookies)
+                        
+                    
+                    
+
+                elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                    for cookies in self.cookieL:
+                        if inO(mouseX,mouseY,cookies):
+                                if cookies.colour == ORANGE:
+                                    self.cookie.w -= 10
+                                    self.cookie.h -= 10
+                                    self.cookie.x += 5
+                    
+            #Bunch of COOKIES
+            for cookies in self.cookieL:
+                cookies.update()
+
+     
+
+
+            # Timer and Random Cookies
+            self.timer += 1
+            if self.timer % 100 == 0:
+                for i in range(10):
+                    self.cookieL.append(Cookie(random.randrange(SCREEN_WIDTH),random.randrange(SCREEN_HEIGHT),50,50,random.randrange(10,50,10),YELLOW))
+                
+
+            
+
+    def displayFrame(self):
+        self.screen.fill(COLOUR[WHITE])
+
+        if self.frame1:
+            #Play Button
+            self.pButton.draw(self.screen)
+
+            #Text
+            self.font = pygame.font.SysFont('serif',40)
+            self.font2 = pygame.font.SysFont('serif',25)
+            self.title = self.font.render('COOKIE CLICKER ' , True, COLOUR[BLACK])
+            self.play = self.font2.render('PLAY ' , True, COLOUR[BLACK])
+            self.screen.blit(self.title,[SCREEN_WIDTH // 3, 50])
+            self.screen.blit(self.play,[self.pButton.x + 60, self.pButton.y+30])
+
+        if self.frame2:
+
+            #COOKIE
+            self.cookie.draw(self.screen)
+
+            #Bunch of COOKIES
+            for cookies in self.cookieL:
+                cookies.draw(self.screen)
+
+            #SCORE
+            self.font = pygame.font.SysFont('serif',20)
+            self.text = self.font.render('SCORE: ' + str(self.score), True, COLOUR[BLACK])
+            self.screen.blit(self.text,[50, 50])
+
+
+        pygame.display.flip()
+
+# Game()
+Game()
+
+        
+                
+                        
+            
+                
+                
+
+    
+                            
+        
+                
+                
+
+                
+        
+        
