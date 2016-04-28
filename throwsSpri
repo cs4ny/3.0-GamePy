@@ -1,0 +1,174 @@
+# sideScroller
+
+import pygame
+import random
+import math
+
+# Needed to initialize pygame
+pygame.init()
+
+# Define some Constants
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+GREEN = (0, 255, 0)
+RED = (255, 0, 0)
+BLUE = (0,0,255)
+YELLOW = (255,255,0)
+ORANGE = (255,165,0)
+
+SCREEN_WIDTH = 500
+SCREEN_HEIGHT = 500
+wS = [SCREEN_WIDTH,SCREEN_HEIGHT]
+
+# Create a screen
+screen = pygame.display.set_mode(wS)
+
+# Used to manage how fast the screen updates
+clock = pygame.time.Clock()
+
+#------------------------------------------------------------------------------------
+#COOKIE CLASS
+class Block(pygame.sprite.Sprite):
+    def __init__(self):
+
+        super().__init__()
+        self.images = []
+        self.images.append(pygame.image.load("p1.png"))
+        self.images.append(pygame.image.load("p2.png"))
+        self.images.append(pygame.image.load("p3.png"))
+        self.images.append(pygame.image.load("p4.png"))
+        self.images.append(pygame.image.load("p5.png"))
+
+        self.index = 0
+        self.image = self.images[self.index]
+
+        self.image.set_colorkey(WHITE)
+
+        self.dx = 1
+        self.dy = 1
+        
+        self.rect = self.image.get_rect()
+
+    def pick(self):
+
+        self.index += 1
+        if self.index >= len(self.images):
+            self.index = 0
+        self.image = self.images[self.index]
+
+    def draw(self,screen):
+        screen.blit(self.image,self.rect)
+   
+
+#------------------------------------------------------------------------------------
+
+#INO function
+def inO(mX,mY,O):
+    if mX >= O.rect.x and mX <= O.rect.x + O.rect.width and mY >= O.rect.y and mY <= O.rect.y + O.rect.height:
+        return True
+    else:
+        return False
+#------------------------------------------------------------------------------------
+    
+#Variables
+bList = pygame.sprite.Group()
+aList = pygame.sprite.Group()
+click = False
+release = False
+
+
+pBlock = Block()
+pBlock.rect.x = 150
+pBlock.rect.y = 150
+#aList.add(pBlock)
+
+#Grid
+col = 10
+row = 10
+grid = []
+for r in range(col):
+    grid.append([])
+    for c in range(row):
+        grid[r].append(0)
+
+#----------------------------------------------------------------------------------------
+#Loop until the user clicks the close button.
+loop = True
+
+# -------- Main Program Loop -----------
+while loop:
+    # EVENT PROCESSING
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            loop = False
+
+        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            pos = pygame.mouse.get_pos()
+            if inO(pos[0],pos[1],pBlock):
+                click = True
+                
+                
+
+        elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+            click = False
+            release = True
+            
+
+        
+
+    #------------------------------------------------------------------------------------
+    # RUN LOGIC
+
+    if click:
+        pos = pygame.mouse.get_pos()
+        pBlock.rect.x = pos[0]
+        pBlock.rect.y = pos[1]
+        pBlock.pick()
+    if release:
+        motion = pygame.mouse.get_rel()
+        pBlock.dx = motion[0] / 2
+        pBlock.dy = motion[1] / 2
+        release = False
+
+    motion = pygame.mouse.get_rel()
+
+    
+    if pBlock.rect.x + pBlock.rect.width >= SCREEN_WIDTH or pBlock.rect.x <= 0:
+        pBlock.dx *= -1
+    else:
+        dx = 1
+    if pBlock.rect.y + pBlock.rect.height >= SCREEN_HEIGHT or pBlock.rect.y <= 0:
+        pBlock.dy *= -1
+    else:
+        
+        dy = 1
+    
+    pBlock.rect.x += pBlock.dx
+    pBlock.rect.y += pBlock.dy
+ 
+
+
+    
+    
+    #------------------------------------------------------------------------------------
+    # DRAW COMMANDS
+    screen.fill(WHITE)
+
+    pBlock.draw(screen)
+
+    #for rows in range(row):
+        #pygame.draw.line(screen,RED,(0,rows*50),(SCREEN_WIDTH,rows*50),5)
+
+    #for columns in range(col):
+        #pygame.draw.line(screen,BLUE,(columns*50,0),(columns*50,SCREEN_HEIGHT),5)
+    
+    # Update Screen
+    pygame.display.flip()
+
+    # Set frames per second
+    clock.tick(30)
+# -------- End of Main Program Loop --------
+
+
+# Close the window and quit.
+pygame.quit()
