@@ -1,0 +1,339 @@
+# BOMBER GAME
+# BASICS: MOVEMENT OF 2 PLAYERS, BOMB EXPLOSION, CORRECT BLOCK DESTRUCTION, POWER UPS
+# 3/24/2016 - 4/13/2016 
+
+# IMPORT
+import pygame
+import math
+import random
+import time
+
+#----------------------------------------------------------------------------------------------------------------------------------------------------------
+#GLOBAL
+COLOUR = [(255,255,255),(0,0,0),(96,96,96),
+          (255,0,0),(0,255,0),(0,0,255),
+          (255,255,0),(255,0,255),(255,120,0)]
+
+WHITE = 0
+BLACK = 1
+GREY = 2
+RED = 3
+GREEN = 4
+BLUE = 5
+YELLOW = 6
+PURPLE = 7
+ORANGE =8
+
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 800
+SSIZE = 20
+SCREEN_SIZE = (SCREEN_WIDTH,SCREEN_HEIGHT)
+
+#----------------------------------------------------------------------------------------------------------------------------------------------------------
+# BOMBER CLASS (PLAYER AND BOMBS)
+class Bomber():
+    def __init__(self,row,col,x = SSIZE,y = SSIZE):
+        global SSIZE
+
+        # MOVEMENT
+        self.row = row
+        self.col = col
+        self.speed = 5
+        self.x = x
+        self.y = y
+        self.dx = 0
+        self.dy = 0
+
+        # BOMB EXPLOSION
+        self.go = True
+        self.i = 1
+        self.check = 0
+        self.c = True
+
+        # POWERUPS
+        self.bCor = []
+
+    def draw(self,screen):
+        pygame.draw.rect(screen,COLOUR[ORANGE],[self.x,self.y,SSIZE,SSIZE])
+
+    def update(self):
+        self.x += self.dx
+        self.y += self.dy
+
+
+    def bomb(self,grid,direction):
+
+        grid[self.col][self.row] = 0
+        
+        # DIRECTION
+        if direction == "LEFT":
+            self.dir = self.col - self.i
+            self.dir2 = self.row
+        if direction == "RIGHT":
+            self.dir = self.col + self.i
+            self.dir2 = self.row
+        if direction == "UP":
+            self.dir = self.col
+            self.dir2 = self.row - self.i
+        if direction == "DOWN":
+            self.dir = self.col
+            self.dir2 = self.row + self.i
+
+
+        # EXPLOSION
+        if self.go:
+           
+            if grid[self.dir][self.dir2]  == 5:
+                self.check += 1
+                self.bCor.append(self.dir)
+                self.bCor.append(self.dir2)
+
+            if self.check <= 1:
+                grid[self.dir][self.dir2]  = 3
+                        
+            if self.check == 1:
+                self.c = False
+                    
+            if self.i < 3 and self.c:
+                self.i += 1
+              
+            else:
+                self.go = False
+                self.i = 1
+                self.check = 0
+                self.c = True
+                return True
+
+#----------------------------------------------------------------------------------------------------------------------------------------------------------
+# GAME CLASS
+class Game():
+    def __init__(self):
+        global SCREEN_WIDTH
+        global SCREEN_HEIGHT
+        global SSIZE
+
+        #INITIALIZE
+        pygame.init()
+        self.screen = pygame.display.set_mode(SCREEN_SIZE)
+        clock = pygame.time.Clock()
+
+        self.initialize()
+
+        loop = True
+        while loop:
+            loop = self.processEvents()
+            self.runLogic()
+            self.displayFrame()
+            clock.tick(30)
+
+        pygame.quit()
+
+    def initialize(self):
+
+        # ENVIRONMENT
+        self.grid = []
+        for row in range (SCREEN_HEIGHT // SSIZE):
+            self.grid.append([])
+            for col in range (SCREEN_WIDTH // SSIZE):
+                self.grid[row].append(0)
+
+        # BOMBER (COL,ROW)
+        self.p1 = Bomber(1,4)
+        self.p2 = Bomber (3,4) 
+
+        # BOMB EXPLOSION TIMER
+        self.bombL = []
+        self.bomb = False
+        self.timer = False
+        self.time = 0
+        
+        # POWERUPS
+        self.stepOn = False
+        self.grid[5][5] = 6
+
+        # TO BE WORK ON
+        self.hPlayer = False
+        self.hWall = False
+
+
+    def processEvents(self):
+
+        loop = True
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                loop = False
+
+            # KEYDOWN
+            elif event.type == pygame.KEYDOWN:
+
+                # P1
+                if event.key == pygame.K_LEFT:
+                    self.p1.dx = -1 * self.p1.speed
+                elif event.key == pygame.K_RIGHT:
+                    self.p1.dx = self.p1.speed
+                elif event.key == pygame.K_UP:
+                    self.p1.dy  = -1 * self.p1.speed
+                elif event.key == pygame.K_DOWN:
+                    self.p1.dy = self.p1.speed
+                elif event.key == pygame.K_l:
+                    self.cBomb = Bomber(self.p1.y //SSIZE,self.p1.x // SSIZE)
+                    self.cBomb2 = Bomber(self.p1.y //SSIZE,self.p1.x // SSIZE)
+                    self.cBomb3 = Bomber(self.p1.y //SSIZE,self.p1.x // SSIZE)
+                    self.cBomb4 = Bomber(self.p1.y //SSIZE,self.p1.x // SSIZE)
+                    self.time5 = 0
+                    self.i = 1
+                    self.time6 = 0
+                    self.i2 = 1
+                    self.time7 = 0
+                    self.i3 = 1
+                    self.time8 = 0
+                    self.i4 = 1
+                    self.bombL.insert(0,self.cBomb)                 
+                    self.timer = True
+
+                # P2
+                elif event.key == pygame.K_a:
+                    self.grid[self.p2.col][self.p2.row] = 0
+                    self.p2.col -= 1
+                    self.grid[self.p2.col][self.p2.row] = 4
+                elif event.key == pygame.K_d:
+                    self.grid[self.p2.col][self.p2.row] = 0
+                    self.p2.col += 1
+                    self.grid[self.p2.col][self.p2.row] = 4
+                elif event.key == pygame.K_w:
+                    self.grid[self.p2.col][self.p2.row] = 0
+                    self.p2.row -= 1
+                    self.grid[self.p2.col][self.p2.row] = 4
+                elif event.key == pygame.K_s:
+                    self.grid[self.p2.col][self.p2.row] = 0
+                    self.p2.row += 1
+                    self.grid[self.p2.col][self.p2.row] = 4
+
+            # KEYUP
+            elif event.type == pygame.KEYUP:
+                if event.key == pygame.K_LEFT:
+                    self.p1.dx = 0
+                elif event.key == pygame.K_RIGHT:
+                    self.p1.dx = 0
+                elif event.key == pygame.K_UP:
+                    self.p1.dy = 0
+                elif event.key == pygame.K_DOWN:
+                    self.p1.dy = 0
+
+            # MOUSE AND MAP CONSTRUCTION
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                pos = pygame.mouse.get_pos()
+                row = pos[1] // SSIZE
+                column = pos[0] // SSIZE
+
+                self.grid[column][row] = 5
+                    
+
+        return loop
+    
+    def runLogic(self):
+        
+        self.grid[6][6] = 7
+
+        # P1
+        self.p1.update()
+        # POWER UP (SPEED)
+        if self.grid[self.p1.x // SSIZE][self.p1.y //SSIZE ] == 6:
+            self.grid[self.p1.x // SSIZE][self.p1.y // SSIZE] = 0
+            self.stepOn = True
+        if self.stepOn:
+            self.p1.speed += 5
+            self.stepOn = False
+
+            
+        # BOMBS
+        # DRAW
+        if len(self.bombL) >= 1:
+            self.grid[self.bombL[0].col][self.bombL[0].row] = 2
+
+        # TIMER
+        if self.timer:
+            self.time += 1
+            if self.time >= 80 and self.time < 110:
+                self.bomb = True
+            if self.time > 110:
+                self.timer = False
+                self.bomb = False
+                self.time = 0
+                
+        # EXPLOSION AND RETREATING        
+        if self.bomb:
+
+            self.cBomb.bomb(self.grid,"LEFT")
+            self.time5 += 1
+            if  self.time5  >= 10 and self.grid[self.cBomb.col - self.i][self.cBomb.row] == 3:
+                self.grid[self.cBomb.col - self.i][self.cBomb.row] = 0
+                self.i += 1
+                self.time5 = 0
+            if len(self.cBomb.bCor) != 0:
+                self.grid[self.cBomb.bCor[0]][self.cBomb.bCor[1]] = 6
+
+
+            self.cBomb2.bomb(self.grid,"RIGHT")
+            self.time6 += 1
+            if  self.time6 >= 10 and self.grid[self.cBomb.col + self.i2][self.cBomb.row] == 3:
+                self.grid[self.cBomb.col + self.i2][self.cBomb.row] = 0
+                self.i2 += 1
+                self.time6 = 0
+            if len(self.cBomb2.bCor) != 0:
+                self.grid[self.cBomb2.bCor[0]][self.cBomb2.bCor[1]] = 6
+                    
+            self.cBomb3.bomb(self.grid,"UP")
+            self.time7 += 1
+            if  self.time7 >= 10 and self.grid[self.cBomb.col][self.cBomb.row  - self.i3] == 3:
+                self.grid[self.cBomb.col][self.cBomb.row  - self.i3] = 0
+                self.i3 += 1
+                self.time7 = 0
+            if len(self.cBomb3.bCor) != 0:
+                self.grid[self.cBomb3.bCor[0]][self.cBomb3.bCor[1]] = 6
+                    
+            self.cBomb4.bomb(self.grid,"DOWN")
+            self.time8 += 1
+            if  self.time8 >= 10 and self.grid[self.cBomb.col][self.cBomb.row  + self.i4] == 3:
+                self.grid[self.cBomb.col][self.cBomb.row  + self.i4] = 0
+                self.i4 += 1
+                self.time8 = 0
+            if len(self.cBomb4.bCor) != 0:
+                self.grid[self.cBomb4.bCor[0]][self.cBomb4.bCor[1]] = 6
+
+
+    def displayFrame(self):
+
+        # Environment
+        #for rows in range(SCREEN_HEIGHT//SSIZE):
+            #pygame.draw.line(self.screen,COLOUR[WHITE],(0,rows*SSIZE),(SCREEN_WIDTH,rows*SSIZE),5)
+
+        #for columns in range(SCREEN_WIDTH//SSIZE):
+            #pygame.draw.line(self.screen,COLOUR[WHITE],(columns*SSIZE,0),(columns*SSIZE,SCREEN_HEIGHT),5)
+
+        # P1, BOMB, EXPLOSION, P2, BLOCK, POWER UP, POWER UP, BOARD
+        for row in range(SCREEN_HEIGHT//SSIZE):
+            for col in range(SCREEN_WIDTH//SSIZE):
+                self.p1.draw(self.screen)
+                if self.grid[row][col] == 2:
+                    pygame.draw.ellipse(self.screen,COLOUR[RED],[SCREEN_HEIGHT//(SCREEN_HEIGHT//SSIZE)*row,SCREEN_WIDTH//(SCREEN_WIDTH/SSIZE)*col,SSIZE,SSIZE])
+                if self.grid[row][col] == 3:
+                    pygame.draw.ellipse(self.screen,COLOUR[WHITE],[SCREEN_HEIGHT//(SCREEN_HEIGHT//SSIZE)*row,SCREEN_WIDTH//(SCREEN_WIDTH/SSIZE)*col,SSIZE,SSIZE])
+                if self.grid[row][col] == 4:
+                    pygame.draw.rect(self.screen,COLOUR[BLUE],[SCREEN_HEIGHT//(SCREEN_HEIGHT//SSIZE)*row,SCREEN_WIDTH//(SCREEN_WIDTH/SSIZE)*col,SSIZE,SSIZE])
+                if self.grid[row][col] == 5:
+                    pygame.draw.rect(self.screen,COLOUR[GREEN],[SCREEN_HEIGHT//(SCREEN_HEIGHT//SSIZE)*row,SCREEN_WIDTH//(SCREEN_WIDTH/SSIZE)*col,SSIZE,SSIZE])
+                if self.grid[row][col] == 6:
+                    pygame.draw.ellipse(self.screen,COLOUR[YELLOW],[SCREEN_HEIGHT//(SCREEN_HEIGHT//SSIZE)*row,SCREEN_WIDTH//(SCREEN_WIDTH/SSIZE)*col,SSIZE-5,SSIZE-2])
+                if self.grid[row][col] == 7:
+                    pygame.draw.ellipse(self.screen,COLOUR[PURPLE],[SCREEN_HEIGHT//(SCREEN_HEIGHT//SSIZE)*row,SCREEN_WIDTH//(SCREEN_WIDTH/SSIZE)*col,SSIZE-5,SSIZE-2])
+                if self.grid[row][col] == 0:
+                    pygame.draw.rect(self.screen,COLOUR[BLACK],[SCREEN_HEIGHT//(SCREEN_HEIGHT//SSIZE)*row,SCREEN_WIDTH//(SCREEN_WIDTH/SSIZE)*col,SSIZE-1,SSIZE-1])
+            
+
+        pygame.display.flip()
+
+# Game()
+Game()
+
+        
