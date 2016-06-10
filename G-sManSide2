@@ -1,0 +1,992 @@
+# STICKMAN SIDESCROLLING
+# PROBLEMS SOLVED: PROPER POSITIONING, SLOW DUES TO IMAGES RENDERING, PARTICLES EFFECT, ARROWS
+
+
+import pygame
+import random
+import math
+
+#-------------------------------------------------------------------------------------------------------------------------------
+#CONSTANTS
+BLACK = (0,0,0)
+WHITE = (255,255,255)
+RED = (255,0,0)
+GREEN = (0,255,0)
+BLUE = (0,0,255)
+
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 700
+
+#-------------------------------------------------------------------------------------------------------------------------------
+# COLLISION DETECTION
+def inO(mX,mY,Ox,Oy,Ow,Oh,mW = 0, mH = 0,):
+    if mX + mW  >= Ox and mX <= Ox + Ow and mY +mH >= Oy and mY <= Oy + Oh:
+        return True
+    else:
+        return False
+
+#-------------------------------------------------------------------------------------------------------------------------------
+# BINARY SEARCH
+def bSearch(key,aList):
+
+    # INIT
+    lBound = 0
+    uBound = len(aList) - 1
+    found = False
+
+    # IF LIST CAN STILL BE SPLIT AND NOT FOUND
+    while lBound <= uBound and not found:
+        mBound = (lBound + uBound) // 2
+        if aList[mBound] > key:
+            uBound = mBound - 1
+        elif aList[mBound] < key: 
+            lBound = mBound + 1
+        else:
+            found = True
+
+    # RESULTS
+    if found:
+        return True
+    else:
+        return False
+
+#-------------------------------------------------------------------------------------------------------------------------------
+# INSERTION SORT
+def iSort(aList):
+    """ Sort by comparing a sorted list to the next number """
+
+    nList = aList[:]
+    
+    # LOOP
+    for i in range(1,len(nList)):
+        curVal = nList[i]
+        pos = i
+
+        # UNITL ALL VALS ARE SLIDED AND LIST IS OUT OF ORDER 
+        while pos > 0 and nList[pos-1] > curVal:
+            nList[pos] = nList[pos-1]
+            pos = pos - 1
+
+        # SWITCH
+        nList[pos] = curVal
+
+    return(nList)
+    
+#-------------------------------------------------------------------------------------------------------------------------------
+#SPRTESHEETS
+class SpriteSheet(object):
+
+    # LOAD SHEET
+    def __init__(self,fName):
+        self.sSheet = pygame.image.load(fName).convert()
+
+    # DIVIDE IMAGES
+    def gImage(self,x,y,width,height):
+        image = pygame.Surface([width,height]).convert()
+        image.blit(self.sSheet,(0,0),(x,y,width,height))
+        image.set_colorkey(WHITE) #WHITE IS TRANSPARENT
+        return image
+
+
+#-------------------------------------------------------------------------------------------------------------------------------
+#PLAYER
+class Character(pygame.sprite.Sprite):
+
+    #-----------------------------------------------------------------------
+    def __init__(self):
+
+        super().__init__()
+
+        # INITIALIZE
+        self.dx = 0
+        self.dy = 0
+        self.walkR = []
+        self.walkL = []
+        self.hitR = []
+        self.hitL = []
+        self.dir = "R"
+        self.hit = 0
+        self.weapon = "stick"
+        self.health = 20
+        self.mana = 20
+        #self.attack = 10
+
+        # WALKR
+        self.sprSheet = SpriteSheet("RunSpriteSheet1.jpg")
+        igR0 = self.sprSheet.gImage(10,160,150,120)
+        igR1 = self.sprSheet.gImage(215, 160, 150, 120)
+        igR2 = self.sprSheet.gImage(380, 160, 150, 120)
+        igR3 = self.sprSheet.gImage(530, 160, 150, 120)
+        igR4 = self.sprSheet.gImage(700, 160, 160, 120)
+        igR5 = self.sprSheet.gImage(860, 160, 160, 120)
+        self.walkR.append(igR0)
+        self.walkR.append(igR1)
+        self.walkR.append(igR2)
+        self.walkR.append(igR3)
+        self.walkR.append(igR4)
+        self.walkR.append(igR5)
+
+        # WALKL
+        for igR in self.walkR:
+            igL = pygame.transform.flip(igR,True,False)
+            self.walkL.append(igL)
+
+        # HITR
+        if self.weapon == "sword" :
+            igHR0 = self.sprSheet.gImage(450, 420, 270, 140)
+        if self.weapon == "stick":
+            igHR0 = self.sprSheet.gImage(0, 740, 300, 140)
+        
+        igHR1 = self.sprSheet.gImage(10, 160, 150, 120)
+        self.hitR.append(igHR0)
+        self.hitR.append(igHR1)
+
+        # HITL
+        for igHR in self.hitR:
+            igHL = pygame.transform.flip(igHR,True,False)
+            self.hitL.append(igHL)
+
+        # SET IMAGE
+        self.image = self.walkR[0]
+        self.rect = self.image.get_rect()
+
+    #-----------------------------------------------------------------------
+    def update(self,wShift):
+
+        # MOVEMENT
+        self.rect.y += self.dy
+        self.rect.x += self.dx
+        pos = self.rect.x + wShift
+
+        # DIRECTIONS
+        if self.dir == "R":
+            frame = (pos // 30) % len(self.walkR)
+            self.image = self.walkR[frame]
+        elif self.dir == "L":
+            frame = (pos // 30) % len(self.walkL)
+            self.image = self.walkL[frame]
+        elif self.dir == "HR":
+            self.image = self.hitR[self.hit]
+        else:
+            self.image = self.hitL[self.hit]
+
+    #-----------------------------------------------------------------------
+    def gLeft(self,speed):
+
+        # GO LEFT
+        self.dx = -speed
+        self.dir = "L"
+
+    #-----------------------------------------------------------------------
+    def gRight(self,speed):
+
+        # GO RIGHT
+        self.dx = speed
+        self.dir = "R"
+
+    #-----------------------------------------------------------------------
+    def stop(self):
+
+        # STOP
+        self.dx = 0
+
+#-------------------------------------------------------------------------------------------------------------------------------
+# SKILL CLASS
+class Skill():
+
+    #-----------------------------------------------------------------------
+    def __init__(self,x,y,image,speed):
+
+
+        # INITIALIZE
+        self.x = x
+        self.y = y
+        self.dx = speed
+        self.image = pygame.image.load('G-sMan('+str(image)+').gif')
+        
+    #-----------------------------------------------------------------------
+    def update(self):
+        self.x += self.dx
+
+    #-----------------------------------------------------------------------
+    def draw(self,screen):
+        self.image = pygame.transform.scale(self.image,(50,50))
+        screen.blit(self.image,[self.x,self.y])
+        
+
+#-------------------------------------------------------------------------------------------------------------------------------
+# ENEMIES
+class Enemy():
+
+    #-----------------------------------------------------------------------
+    def __init__(self,x,y,dx,jumpH,health,attack,tyPe):
+
+
+        # INITIALIZE
+        self.x = x
+        self.y = y
+        self.dx = dx
+        self.jumpH = jumpH
+        self.health = health
+        self.attack = attack
+        self.angle = 0
+        self.type = tyPe
+
+
+    #-----------------------------------------------------------------------
+    def update(self):
+
+        # MOVEMENT
+        self.x -= self.dx
+
+        if self.type == "upDown":
+            self.angle += 1
+            
+            # UP AND DOWN (SINE CURVE)
+            self.dy = (self.dx + 7)  * (math.sin(self.jumpH * math.radians(self.angle)))
+            self.y -= self.dy
+
+        if self.type == "normal":
+            self.dy = 0
+    
+    #-----------------------------------------------------------------------
+    def draw(self,screen):
+
+        # DRAW
+        pygame.draw.rect(screen,BLACK,[self.x,self.y,50,50])
+
+#-------------------------------------------------------------------------------------------------------------------------------
+# PARTICLES
+class Particles():
+
+    #-----------------------------------------------------------------------
+    def __init__(self,x,y,dx,dy,size,color):
+
+        # INITIALIZE
+        self.x = x
+        self.y = y
+        self.dx = dx
+        self.dy = dy
+        self.size = size
+        self.color = color
+
+
+    #-----------------------------------------------------------------------
+    def update(self):
+
+        # MOVEMENT
+        self.x += self.dx
+        self.y += self.dy
+        self.size -= 0.5
+    
+    #-----------------------------------------------------------------------
+    def draw(self,screen):
+
+        # DRAW
+        pygame.draw.ellipse(screen,self.color,[self.x,self.y,self.size,self.size])
+
+
+#-------------------------------------------------------------------------------------------------------------------------------
+# ARROWS
+class Arrows():
+
+    #-----------------------------------------------------------------------
+    def __init__(self,pX,pY):
+
+        global SCREEN_WIDTH
+        
+        # INITIALIZE
+        self.pX = pX
+        self.pY = pY
+        self.sX = None
+        self.sY = None
+        self.sX2 = None
+        self.sY2 = None
+        self.clicked = False
+        self.shoot = False
+        self.sAngle = 0
+        self.nAngle = 0
+
+
+    #-----------------------------------------------------------------------
+    def update(self):
+
+        # MOUSE ANGLE
+        self.mousePosition = pygame.mouse.get_pos()
+        self.mouseX = self.mousePosition[0]
+        self.mouseY = self.mousePosition[1]
+
+        self.xDiff = self.mouseX - self.pX
+        self.yDiff = self.mouseY - self.pY
+
+        # DIVIDE BY 0
+        if self.xDiff == 0:
+            self.xDiff = 1
+
+        # TRIG
+        self.ratio = self.yDiff / self.xDiff
+        self.nAngle = math.degrees(math.atan(self.ratio))
+
+        # ANGLE LIMIT
+        if self.nAngle > 80:
+            self.nAngle = 80
+
+        if self.nAngle < -80:
+            self.nAngle = -80
+
+        # DRAW LINE
+        self.drawX = self.pX +  math.cos(math.radians(self.nAngle)) * 100
+        self.drawY = self.pY +  math.sin(math.radians(self.nAngle)) * 100
+        
+        # SHOOT
+        if self.shoot:
+            self.dx = 50 * math.cos(math.radians(self.sAngle))
+            self.dy = 50 * math.sin(math.radians(self.sAngle))
+            self.sX += self.dx
+            self.sY += self.dy
+            self.sX2 = self.sX +  math.cos(math.radians(self.sAngle)) * 100
+            self.sY2 = self.sY +  math.sin(math.radians(self.sAngle)) * 100
+
+            if self.sX2 > SCREEN_WIDTH:
+                self.shoot = False
+
+
+        
+    #-----------------------------------------------------------------------
+    def draw(self,screen):
+
+        # DRAW LINE
+        pygame.draw.line(screen,BLACK,[self.pX,self.pY],[self.drawX,self.drawY],10)
+
+        # DRAW ARROW
+        if self.shoot:
+            pygame.draw.line(screen,BLACK,[self.sX,self.sY],[self.sX2,self.sY2],10)
+        
+#-------------------------------------------------------------------------------------------------------------------------------
+# GAME CLASS
+class Game():
+
+    #-----------------------------------------------------------------------
+    def __init__(self):
+        global SCREEN_WIDTH
+        global SCREEN_HEIGHT
+
+        # INIT
+        pygame.init()
+        self.screen = pygame.display.set_mode([SCREEN_WIDTH,SCREEN_HEIGHT])
+        pygame.display.set_caption("Stickman SideScrolling")
+        clock = pygame.time.Clock()
+
+        self.initialize()
+
+        loop = True
+        while loop:
+            loop = self.processEvents()
+            self.runLogic()
+            self.displayFrame()
+            clock.tick(60)
+
+        pygame.quit()
+
+    #-----------------------------------------------------------------------
+    def initialize(self):
+
+        # NORMAL -----------------------------------
+        # CREATE CHARACTERS
+        self.player = Character()
+        self.player.rect.x = 300
+        self.player.rect.y = SCREEN_HEIGHT - 225
+        self.pHit = False
+
+        self.sprList = pygame.sprite.Group()
+        self.sprList.add(self.player)
+
+        # ARROWS
+        self.aShot = False
+        self.aShotUpdate = False
+        self.aShotTime = 0
+
+        # PLAYER'S HITTING RANGE 
+        self.pHitRX = None
+        self.pHitRY = None
+        self.pHitRW = None
+        self.pHitRH = None 
+
+        # PARTICLES EFFECT
+        self.pList = []
+        self.parHit = False
+        self.parX = None
+        self.parY = None
+        self.parTime = 0
+        self.parColor = None
+        
+        # WORLDS
+        self.wShift = 0
+        self.background = pygame.image.load("background_01.png").convert()
+        self.background.set_colorkey(WHITE)
+
+        # SHOP BUTTON/ GAME BUTTON
+        self.shopHover = False
+        self.cShop = False
+        self.gameHover = False
+
+        # SKILLS
+        self.skillL = []
+
+        # ENEMIES
+        self.eList = []
+        
+        
+        # SHOP ---------------------------------------
+        self.bigDict = {"stick":50,"sword":100,"hammer":200,"spear":300,
+                        "hp Potion":10,"mp Potion":10,"speed Potion":20,"attk Potion":20,
+                        "fireball":100,"lightning":200,"arrows":300,"shield":150}
+
+        # GEAR/ POTION/ SKILLS LISTS
+        self.gList = ["stick","sword","hammer","spear"]
+        self.pGList = ["$50","$100","$200","$300"]
+        self.poList = ["hp Potion","mp Potion","speed Potion","attk Potion"]
+        self.pPoList = ["$10","$10","$20","$20"]
+        self.sList = ["fireball","lightning","arrows","shield"]
+        self.sPList = ["$100","$200","$300","$150"]
+
+        # IMAGES LISTS
+        self.iGList = []
+        self.iPoList = []
+        self.iSList = []
+        self.allList = []
+        for i in range(len(self.gList)):
+            self.iGList.append(pygame.transform.scale(pygame.image.load('G-sMan('+str(self.gList[i])+').png'),(100,100)))
+            self.allList.append(pygame.transform.scale(pygame.image.load('G-sMan('+str(self.gList[i])+').png'),(50,50)))
+
+        for i in range(len(self.poList)):
+            self.iPoList.append(pygame.transform.scale(pygame.image.load('G-sMan('+str(self.poList[i])+').png'),(100,100)))
+            self.allList.append(pygame.transform.scale(pygame.image.load('G-sMan('+str(self.poList[i])+').png'),(50,50)))
+
+        for i in range(len(self.sList)):
+            self.iSList.append(pygame.transform.scale(pygame.image.load('G-sMan('+str(self.sList[i])+').png'),(100,100)))
+            self.allList.append(pygame.transform.scale(pygame.image.load('G-sMan('+str(self.sList[i])+').png'),(50,50)))
+            
+
+        # SELECTION/ PAY BUTTON
+        self.payHover = False
+      
+        # USER DETAILS
+        self.uCoins = 1000
+        self.uCart = []
+        self.uCost = 0
+        self.uInvent = []
+
+
+    #-----------------------------------------------------------------------
+    def processEvents(self):
+
+        loop = True
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                loop = False
+
+            # KEYDOWN
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_a:
+                    self.player.gLeft(10)
+                if event.key == pygame.K_d:
+                   self.player.gRight(10)
+
+                if event.key == pygame.K_SPACE:
+                    self.pHit = True
+                    if self.player.dir == "R" or self.player.dir == "HR":
+                        self.player.hit = 0
+                        self.player.dir = "HR"
+                    else:
+                        self.player.hit = 0
+                        self.player.dir = "HL"
+            
+
+            # KEYUP
+            elif event.type == pygame.KEYUP:
+                if event.key == pygame.K_a and self.player.dx < 0:
+                    self.player.stop()
+                if event.key == pygame.K_d and self.player.dx > 0:
+                    self.player.stop()
+                if event.key == pygame.K_SPACE:
+                    self.pHit = False
+                    if self.player.dir == "HR":
+                        self.player.hit += 1
+                        self.player.dir = "HR"
+                    else:
+                        self.player.hit += 1
+                        self.player.dir = "HL"
+
+
+            # MOUSE
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+
+                # NORMAL --------------------------------
+                if self.cShop == False:
+
+                    mousePosition = pygame.mouse.get_pos()
+                    mouseX = mousePosition[0]
+                    mouseY = mousePosition[1]
+
+                    # SHOP BUTTON
+                    if self.shopHover == True:
+                        self.cShop = True
+                        self.shopHover = False
+
+                    # INVENTORY BUTTONS
+                    for i in range (len(self.uInvent)):
+                        if inO(mouseX,mouseY,20 + i * 70,SCREEN_HEIGHT - 75,50,50):
+                            usedInvent = self.uInvent[i]
+
+                            # BINARY SEARCH WEAPONS
+                            self.gList2 = iSort(self.gList)
+                            if bSearch(usedInvent,self.gList2):
+                                self.player.weapon = usedInvent
+
+                                # CHECK WEAPON
+                                # SWORD
+                                if self.player.weapon == "sword" :
+                                    igHR0 = self.player.sprSheet.gImage(450, 420, 270, 140)
+
+                                # STICK
+                                if self.player.weapon == "stick":
+                                    igHR0 = self.player.sprSheet.gImage(0, 740, 300, 140)
+
+
+                                # HITR AND HITL
+                                igHR1 = self.player.sprSheet.gImage(10, 160, 150, 120)
+                                self.player.hitR[0] = igHR0
+                                self.player.hitR[1] = igHR1
+
+                                for igHR in self.player.hitR:
+                                    igHL = pygame.transform.flip(igHR,True,False)
+                                    self.player.hitL[self.player.hitR.index(igHR)] = igHL
+
+                            # BINARY SEARCH POTIONS
+                            self.poList2 = iSort(self.poList)
+                            if bSearch(usedInvent,self.poList2):
+
+                                if self.poList.index(usedInvent) == 0:
+                                    self.player.health += 5
+                                if self.poList.index(usedInvent) == 1:
+                                    self.player.mana += 5
+
+                            # BINARY SEARCH SKILLS
+                            self.sList2 = iSort(self.sList)
+                            if bSearch(usedInvent,self.sList2):
+                                
+                                if str(usedInvent) == "fireball":
+                                    self.skillL.append(Skill(self.player.rect.x,self.player.rect.y,str(usedInvent),7))
+                                if str(usedInvent) == "lightning":
+                                    self.skillL.append(Skill(self.player.rect.x,self.player.rect.y,str(usedInvent),15))
+                                if str(usedInvent) == "arrows":
+                                    self.arrows = Arrows(self.player.rect.x + self.player.rect.width,self.player.rect.y)
+                                    self.aShot = True
+                                
+                            # REMOVAL AND SORT INVENTORY
+                            self.uInvent.remove(usedInvent)
+                            self.uInvent = iSort(self.uInvent)
+
+                    # ARROWS
+                    if self.aShot:
+                        self.aShotUpdate = True
+                        self.aShotTime += 1
+                        self.arrows.sAngle = self.arrows.nAngle
+                        self.arrows.sX = self.arrows.pX
+                        self.arrows.sY = self.arrows.pY
+                        self.arrows.sX2 = self.arrows.sX +  math.cos(math.radians(self.arrows.sAngle)) * 100
+                        self.arrows.sY2 = self.arrows.sY +  math.sin(math.radians(self.arrows.sAngle)) * 100
+                        
+
+    
+                # SHOP ----------------------------------
+                if self.cShop:
+                    # ITEMS
+                    if self.payHover != True and len(self.uCart) < 6:
+                        mousePosition = pygame.mouse.get_pos()
+                        mouseX = mousePosition[0]
+                        mouseY = mousePosition[1]
+
+                        for row in range(50,SCREEN_WIDTH,200):
+                            if inO(mouseX,mouseY,row,100,100,100):
+                                self.uCart.append(self.gList[(row - 50)//200])
+                                
+                            if inO(mouseX,mouseY,row,300,100,100):
+                                self.uCart.append(self.poList[(row - 50)//200])
+                                
+                            if inO(mouseX,mouseY,row,500,100,100):
+                                self.uCart.append(self.sList[(row - 50)//200])
+
+                    if len(self.uCart) >= 6:
+                        print("Cart is full")
+                        print("")
+
+                    # PAY BUTTON 
+                    if self.payHover == True:
+                        for items in self.uCart:
+                            self.uCost += self.bigDict[items]
+                        
+                        if self.uCost >  self.uCoins:
+                            print("Sorry. You don't have enough money.")
+                        elif self.uCost < self.uCoins and len(self.uInvent) + len(self.uCart) <= 11:
+                            self.uCoins -= self.uCost
+                            for items in self.uCart:
+                                self.uInvent.append(items)
+
+                            self.uInvent = iSort(self.uInvent)
+                                
+                            print("RECEIPT:")
+                            print("You've bought " + ' ,'.join(self.uCart))
+                            print("You paid " + str(self.uCost))
+                        else:
+                            print("")
+                            print("Too much items. Can't add to your Inventory")
+
+
+                        self.uCart = []
+                        self.uCost = 0
+                        
+
+                    # GAME BUTTON
+                    if self.gameHover == True:
+                        self.cShop = False
+                        self.gameHover = False
+            
+
+        return loop
+
+    #-----------------------------------------------------------------------
+    def runLogic(self):
+
+        #TESTING
+        
+        
+        # NORMAL ----------------------------------
+        if self.cShop == False:
+
+            # MOUSE
+            mousePosition = pygame.mouse.get_pos()
+            mouseX = mousePosition[0]
+            mouseY = mousePosition[1]
+
+            # PLAYER
+            self.player.update(self.wShift)
+            # RIGHT SOME PROBLEMS
+            if self.player.rect.right >= 250:
+                diff = self.player.rect.right - 250
+                self.player.rect.right = 250
+                if self.wShift < - 4000:
+                    self.player.rect.x = 0
+                    self.wShift = 0
+                    self.wShift += (-diff)
+                else:
+                    self.wShift += (-diff)
+            # LEFT SOME PROBLEMS
+            if self.player.rect.left <= 50:
+                diff = 50 - self.player.rect.left 
+                self.player.rect.left = 50
+                if self.wShift > 0:
+                    self.player.rect.x = 600
+                    self.wShift = -4000
+                    self.wShift += (diff)
+                else:
+                    self.wShift += (diff)
+
+            # SHOPHOVER
+            if inO(mouseX,mouseY,45,20,95,60):
+                self.shopHover = True
+            else:
+                self.shopHover = False
+
+            # PLAYER IVENTORY
+            for i in range(len(self.uInvent)):
+                image = pygame.transform.scale(pygame.image.load('G-sMan('+str(self.uInvent[i])+').png'),(50,50))
+                self.screen.blit(image,[20 + i * 70,SCREEN_HEIGHT - 75])
+
+
+            # SKILLS UPDATE
+            for skills in self.skillL:
+                skills.update()
+                if skills.x > SCREEN_WIDTH:
+                    self.skillL.remove(skills)
+
+            # ENEMIES UPDATE
+            for enemies in self.eList:
+                enemies.update()
+                if enemies.x < 0:
+                    self.eList.remove(enemies)
+
+            # ENEMIES RENEWAL
+            if len(self.eList) < 2:
+                self.eChance = random.randrange(2)
+                if self.eChance == 0:
+                    self.eList.append(Enemy(SCREEN_WIDTH-60,SCREEN_HEIGHT - 160,random.randrange(1,4),random.randrange(2,7),random.randrange(1,5),random.randrange(1,5),"upDown"))
+                if self.eChance == 1:
+                    self.eList.append(Enemy(SCREEN_WIDTH-60,SCREEN_HEIGHT - 220,random.randrange(4,10),random.randrange(2,7),random.randrange(1,5),random.randrange(1,5),"normal"))
+                
+                    
+            # PLAYER COLLIDES ENEMIES
+            for enemies in self.eList:
+                if inO(self.player.rect.x,self.player.rect.y,enemies.x,enemies.y,50,50,self.player.rect.width,self.player.rect.height):
+                    self.eList.remove(enemies)
+                    self.player.health -= 1
+                    self.parHit = True
+                    self.parTime = 0
+                    self.parColor = WHITE
+                    self.parX = self.player.rect.x + self.player.rect.width
+                    self.parY = self.player.rect.y
+
+            # PLAYER HITS ENEMIES
+            if self.player.weapon == "stick":
+                self.pHitRX = self.player.rect.x + self.player.rect.width + 50
+                self.pHitRY = self.player.rect.y
+                self.pHitRW = 100
+                self.pHitRH = 40
+
+            if self.player.weapon == "sword":
+                self.pHitRX = self.player.rect.x + 150
+                self.pHitRY = self.player.rect.y
+                self.pHitRW = 120
+                self.pHitRH = 70
+            
+            if self.pHit:
+                for enemies in self.eList:
+                    if inO(self.pHitRX,self.pHitRY,enemies.x,enemies.y,50,50,self.pHitRW,self.pHitRH):
+                        self.eList.remove(enemies)
+                        self.uCoins += 5
+                        self.parHit = True
+                        self.parTime = 0
+                        self.parColor = BLUE
+                        self.parX = enemies.x 
+                        self.parY = enemies.y
+                        self.pHit = False
+
+            # SKILLS HIT ENEMIES
+            for skills in self.skillL:
+                for enemies in self.eList:
+                    if inO(skills.x,skills.y,enemies.x,enemies.y,50,50,50,50):
+                        self.eList.remove(enemies)
+                        self.uCoins += 5
+                        self.parHit = True
+                        self.parTime = 0
+                        self.parColor = BLUE
+                        self.parX = enemies.x 
+                        self.parY = enemies.y
+                       
+
+            # PARTICLES EFFECT
+            if self.parHit:
+                self.parTime += 1
+
+                # PARTICLES UPDATE
+                for p in self.pList:
+                    p.update()
+                    if p.size < 0:
+                         self.pList.remove(p)
+
+                # PARTICLES NUMBER AND TIMER 
+                if len(self.pList) < 200 and self.parTime < 20:
+                    self.pList.append(Particles(self.parX,self.parY,random.randrange(-5,5),random.randrange(-5,5),random.randrange(20),self.parColor))
+                    
+                else:
+                    self.pList = []
+                    self.parHit = False
+
+            # ARROWS
+            if self.aShot:
+                self.arrows.update()
+
+                # ARROWS HIT ENEMIES
+                for enemies in self.eList:
+                    if inO(self.arrows.sX2,self.arrows.sY2,enemies.x,enemies.y,50,50,10,10):
+                        self.eList.remove(enemies)
+                        self.uCoins += 5
+                        self.parHit = True
+                        self.parTime = 0
+                        self.parColor = BLUE
+                        self.parX = enemies.x 
+                        self.parY = enemies.y
+                
+                
+            if self.aShotUpdate:
+                self.arrows.shoot = True
+
+            if self.aShotTime > 5:
+                self.aShotTime = 0
+                self.aShot = False
+                
+
+ 
+        # SHOP -----------------------------------------
+        if self.cShop:
+            # MOUSE
+            mousePosition = pygame.mouse.get_pos()
+            mouseX = mousePosition[0]
+            mouseY = mousePosition[1]
+                
+            # PAY BUTTON
+            if inO(mouseX,mouseY,440,20,80,60):
+                self.payHover = True
+            else:
+                self.payHover = False
+
+            # GAME BUTTON
+            if inO(mouseX,mouseY,40,20,100,60):
+                self.gameHover = True
+            else:
+                self.gameHover = False
+
+            
+
+    #-----------------------------------------------------------------------
+    def displayFrame(self):
+        
+        
+        # SET FONT 
+        self.font = pygame.font.SysFont('Agency FB',50)
+        self.font2 = pygame.font.SysFont('Agency FB',25)
+
+        
+        # NORMAL ------------------------------------
+        if self.cShop == False:
+
+            # ENVIRONMENT
+            self.screen.fill(WHITE)
+            self.screen.blit(self.background,(self.wShift // 3, 0))
+            
+            # SHOP BUTTON
+            self.shop = self.font.render("SHOP",True,WHITE)
+            self.screen.blit(self.shop,[50,20])
+            pygame.draw.rect(self.screen,WHITE,(45,20,95,60),5)
+
+            if self.shopHover:
+                pygame.draw.rect(self.screen,BLACK,(45,20,95,60))
+                self.shop = self.font.render("SHOP",True,WHITE)
+                self.screen.blit(self.shop,[50,20])
+
+            # COINS
+            self.tCoins = self.font2.render("COINS: $" + str(self.uCoins),True,WHITE)
+            self.screen.blit(self.tCoins,[625,10])
+
+            # HEALTH
+            self.tHealth = self.font2.render("HEALTH: " + str(self.player.health),True,WHITE)
+            self.screen.blit(self.tHealth,[625,30])
+
+            # MANA
+            self.tMana =  self.font2.render("MANA: " +str(self.player.mana),True,WHITE)
+            self.screen.blit(self.tMana,[625,50])
+            
+            # INVENTORY/ GEARS/ SKILLS
+            pygame.draw.rect(self.screen,BLACK,(0,SCREEN_HEIGHT - 100,SCREEN_WIDTH,100),20)
+            for i in range(150,SCREEN_WIDTH - 200,60):
+                pygame.draw.rect(self.screen,WHITE,(i,20,50,50),5)
+
+            for i in range(20,SCREEN_WIDTH - 50,70):
+                pygame.draw.rect(self.screen,BLACK,(i,SCREEN_HEIGHT - 75,50,50),5)
+
+            for i in range(len(self.uInvent)):
+                image = pygame.transform.scale(pygame.image.load('G-sMan('+str(self.uInvent[i])+').png'),(50,50))
+                self.screen.blit(image,[20 + i * 70,SCREEN_HEIGHT - 75])
+
+            # PLAYER SKILLS
+            for skills in self.skillL:
+                skills.draw(self.screen)
+            
+            # SPRITE LIST
+            self.sprList.draw(self.screen)
+
+            # ENEMIES
+            for enemies in self.eList:
+                enemies.draw(self.screen)
+
+            # PARTICLES EFFECT
+            #if self.parHit:
+            for particles in self.pList:
+                particles.draw(self.screen)
+
+            # WEAPON RANGE
+            pygame.draw.rect(self.screen,WHITE,(self.pHitRX,self.pHitRY,self.pHitRW,self.pHitRH),1)
+
+            # ARROWS
+            if self.aShot:
+                self.arrows.draw(self.screen)
+                pygame.draw.rect(self.screen,WHITE,(self.arrows.sX2,self.arrows.sY2,10,10),1)
+
+
+        # SHOP --------------------------------------
+        if self.cShop:
+
+            # ENVIRONMENT
+            self.screen.fill(WHITE)
+
+            # GAME BUTTON
+            self.game = self.font.render("GAME",True,BLACK)
+            self.screen.blit(self.game,[50,20])
+            pygame.draw.rect(self.screen,BLACK,(40,20,100,60),5)
+
+            if self.gameHover:
+                pygame.draw.rect(self.screen,BLACK,(40,20,100,60))
+                self.game = self.font.render("GAME",True,WHITE)
+                self.screen.blit(self.game,[50,20])
+
+            # COINS 
+            self.uCoinsT = self.font.render("COINS $" + str(self.uCoins), True,BLACK)
+            self.screen.blit(self.uCoinsT,[550,20])
+
+            # PAY BUTTON
+            self.pay = self.font.render("PAY",True,BLACK)
+            self.screen.blit(self.pay,[450,20])
+            pygame.draw.rect(self.screen,BLACK,(440,20,80,60),5)
+
+            if self.payHover:
+                pygame.draw.rect(self.screen,BLACK,(440,20,80,60))
+                self.pay = self.font.render("PAY",True,WHITE)
+                self.screen.blit(self.pay,[450,20])
+
+            # CART 
+            pygame.draw.rect(self.screen,BLACK,(150,20,270,60),5)
+            for i in range(len(self.uCart)):
+                image = pygame.transform.scale(pygame.image.load('G-sMan('+str(self.uCart[i])+').png'),(35,35))
+                self.screen.blit(image,[160 + i * 40,30])
+                
+
+            # ITEMS
+            for row in range(50,SCREEN_WIDTH,200):
+                
+                #for col in range(100,SCREEN_HEIGHT,200):
+
+                # IMAGES
+                self.screen.blit(self.iGList[(row - 50)//200],[row,100])
+                self.screen.blit(self.iPoList[(row - 50)//200],[row,300])
+                self.screen.blit(self.iSList[(row - 50)//200],[row,500])
+                
+                # TEXT
+                self.gText = self.font2.render(self.gList[(row - 50)//200],True,BLACK)
+                self.pGText = self.font2.render(self.pGList[(row - 50)//200],True,BLACK)
+                self.poText = self.font2.render(self.poList[(row - 50)//200],True,BLACK)
+                self.poPText = self.font2.render(self.pPoList[(row - 50)//200],True,BLACK)
+                self.sText = self.font2.render(self.sList[(row - 50)//200],True,BLACK)
+                self.sPText = self.font2.render(self.sPList[(row - 50)//200],True,BLACK)
+     
+                self.screen.blit(self.gText,[row,100 + 100])
+                self.screen.blit(self.pGText,[row,100 + 125])
+                self.screen.blit(self.poText,[row,300 + 100])
+                self.screen.blit(self.poPText,[row,300 + 125])
+                self.screen.blit(self.sText,[row,500 + 100])
+                self.screen.blit(self.sPText,[row,500 + 125])
+
+
+
+        pygame.display.flip()
+
+#------------------------------------------------------------------------------------------------------------------------------- 
+# CALL GAME()
+Game()
+
+
+
+                    
+                
+
+    
