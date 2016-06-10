@@ -1,0 +1,158 @@
+# STICKMAN SIDESCROLLING
+# PROBLEMS SOLVED: PROPER POSITIONING, SLOW DUES TO IMAGES RENDERING
+
+
+import pygame
+import random
+import math
+
+#-------------------------------------------------------------------------------------------------------------------------------
+#CONSTANTS
+BLACK = (0,0,0)
+WHITE = (255,255,255)
+RED = (255,0,0)
+GREEN = (0,255,0)
+BLUE = (0,0,255)
+
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 700
+
+#-------------------------------------------------------------------------------------------------------------------------------
+# COLLISION DETECTION
+def inO(mX,mY,Ox,Oy,Ow,Oh,mW = 0, mH = 0,):
+    if mX + mW  >= Ox and mX <= Ox + Ow and mY +mH >= Oy and mY <= Oy + Oh:
+        return True
+    else:
+        return False
+
+#-------------------------------------------------------------------------------------------------------------------------------
+# PARTICLES
+class Particles():
+
+    #-----------------------------------------------------------------------
+    def __init__(self,x,y,dx,dy,size):
+
+        # INITIALIZE
+        self.x = x
+        self.y = y
+        self.dx = dx
+        self.dy = dy
+        self.size = size
+
+
+    #-----------------------------------------------------------------------
+    def update(self):
+
+        # MOVEMENT
+        self.x += self.dx
+        self.y += self.dy
+        self.size -= 0.5
+    
+    #-----------------------------------------------------------------------
+    def draw(self,screen):
+
+        # DRAW
+        pygame.draw.ellipse(screen,RED,[self.x,self.y,self.size,self.size])
+    
+        
+#-------------------------------------------------------------------------------------------------------------------------------
+# GAME CLASS
+class Game():
+
+    #-----------------------------------------------------------------------
+    def __init__(self):
+        global SCREEN_WIDTH
+        global SCREEN_HEIGHT
+
+        # INIT
+        pygame.init()
+        self.screen = pygame.display.set_mode([SCREEN_WIDTH,SCREEN_HEIGHT])
+        pygame.display.set_caption("Stickman SideScrolling")
+        clock = pygame.time.Clock()
+
+        self.initialize()
+
+        loop = True
+        while loop:
+            loop = self.processEvents()
+            self.runLogic()
+            self.displayFrame()
+            clock.tick(60)
+
+        pygame.quit()
+
+    #-----------------------------------------------------------------------
+    def initialize(self):
+        
+        self.pL = []
+        self.parHit = False
+        self.time = 0
+        
+        
+    #-----------------------------------------------------------------------
+    def processEvents(self):
+
+        loop = True
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                loop = False
+
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    self.parHit = True
+                    self.time = 0
+
+            
+        return loop
+
+    #-----------------------------------------------------------------------
+    def runLogic(self):
+
+        if 1 < 2:
+            self.time += 1
+            for p in self.pL:
+                p.update()
+                if p.size < 0:
+                     self.pL.remove(p)
+
+                
+
+            mousePosition = pygame.mouse.get_pos()
+            mouseX = mousePosition[0]
+            mouseY = mousePosition[1]
+
+            if len(self.pL) < 300: #and self.time < 25:
+                self.pL.append(Particles(mouseX,mouseY,random.randrange(-5,5),random.randrange(-5,5),random.randrange(30)))
+            #else:
+                #self.pL = []
+                #self.parHit = False
+
+
+        #for i in range(200):
+            #self.pL.append(Particles(300,100,random.randrange(-3,3),random.randrange(-3,3),random.randrange(25)))
+
+
+        
+        
+
+    #-----------------------------------------------------------------------
+    def displayFrame(self):
+        
+        
+        # SET FONT 
+        self.font = pygame.font.SysFont('Agency FB',50)
+        self.font2 = pygame.font.SysFont('Agency FB',25)
+
+        # ENVIRONMENT
+        self.screen.fill(WHITE)
+
+        for p in self.pL:
+            p.draw(self.screen)
+        
+            
+        pygame.display.flip()
+
+#------------------------------------------------------------------------------------------------------------------------------- 
+# CALL GAME()
+Game()
+
