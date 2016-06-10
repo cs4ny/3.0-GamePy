@@ -1,0 +1,246 @@
+# SHOP FOR SIDE SCROLLING GAME
+# NEED TO WORK ON: WAYS TO SHORTEN CODE 5/25/2016
+
+import pygame
+
+#-------------------------------------------------------------------------------------------------------------------------------
+# GLOBAL CONSTANTS
+COLOUR = [ (255, 255, 255), (0, 0, 0), (96, 96, 96), (255, 0, 0), (0, 255, 0),
+            (0, 0, 255), (255, 255, 0), (255, 0, 255), (255, 128, 0) ]
+
+WHITE = 0
+BLACK = 1
+GREY = 2
+RED = 3
+GREEN = 4
+BLUE = 5
+YELLOW = 6
+PURPLE = 7
+ORANGE = 8
+
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 700
+SCREEN_SIZE = (SCREEN_WIDTH,SCREEN_HEIGHT)
+
+#-------------------------------------------------------------------------------------------------------------------------------
+# COLLISION DETECTION
+def inO(mX,mY,Ox,Oy,Ow,Oh):
+    if mX >= Ox and mX <= Ox + Ow and mY >= Oy and mY <= Oy + Oh:
+        return True
+    else:
+        return False
+    
+#-------------------------------------------------------------------------------------------------------------------------------   
+# GAME CLASS
+class Game():
+
+    #-----------------------------------------------------------------------
+    def __init__(self):
+        """ Constructor for Game Class """
+
+        # INIT
+        pygame.init()
+        self.screen = pygame.display.set_mode(SCREEN_SIZE)
+        clock = pygame.time.Clock()
+        self.initialize()
+
+        loop = True
+        while loop:
+            # PROCESS/ RUN LOGIC/ DRAW 
+            loop = self.processEvents()
+            self.runLogic()
+            self.displayFrame()
+            clock.tick(30)
+
+        # QUIT
+        pygame.quit()
+        
+
+
+    #-----------------------------------------------------------------------
+    def initialize(self):
+        """ Set all variables for beginning of game. """
+
+        self.bigDict = {"stick":50,"sword":100,"hammer":200,"gun":300,
+                        "hp Potion":10,"mp Potion":10,"speed Potion":20,"attk Potion":20,
+                        "fireball":350,"lightning":500,"charge":400,"shield":200}
+
+        # GEAR/ POTION/ SKILLS LISTS
+        self.gList = ["stick","sword","hammer","gun"]
+        self.pGList = ["$50","$100","$200","$300","$10","$10","$20","$20"]
+        self.poList = ["hp Potion","mp Potion","speed Potion","attk Potion"]
+        self.pPoList = ["$10","$10","$20","$20"]
+        self.sList = ["fireball","lightning","charge","shield"]
+        self.sPList = ["$350","$500","$400","$200"]
+
+        # IMAGES LISTS
+        self.iGList = []
+        self.iPoList = []
+        self.iSList = []
+        self.allList = []
+        for i in range(len(self.gList)):
+            self.iGList.append(pygame.transform.scale(pygame.image.load('G-sMan('+str(self.gList[i])+').png'),(100,100)))
+            self.allList.append(pygame.transform.scale(pygame.image.load('G-sMan('+str(self.gList[i])+').png'),(50,50)))
+
+        for i in range(len(self.poList)):
+            self.iPoList.append(pygame.transform.scale(pygame.image.load('G-sMan('+str(self.poList[i])+').png'),(100,100)))
+            self.allList.append(pygame.transform.scale(pygame.image.load('G-sMan('+str(self.poList[i])+').png'),(50,50)))
+
+        for i in range(len(self.sList)):
+            self.iSList.append(pygame.transform.scale(pygame.image.load('G-sMan('+str(self.sList[i])+').png'),(100,100)))
+            self.allList.append(pygame.transform.scale(pygame.image.load('G-sMan('+str(self.sList[i])+').png'),(50,50)))
+            
+
+        # SELECTION
+        self.cChoice = None
+        self.cHover = False
+        self.payHover = False
+
+      
+        # USER DETAILS
+        self.uCoins = 10000
+        self.uCart = []
+        self.uCost = 0
+        
+
+    #-----------------------------------------------------------------------
+    def processEvents(self):
+
+        loop = True
+
+        # EVENT HANDLING
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                loop = False
+
+            # CLICK ON ITEMS/ BUTTONS
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+
+                # ITEMS
+                if self.payHover != True and len(self.uCart) < 6:
+                    self.cHover = True
+
+                if len(self.uCart) >= 6:
+                    print("Cart is full")
+                    print("")
+
+                # PAY 
+                if self.payHover == True:
+                    for items in self.uCart:
+                        self.uCost += self.bigDict[items]
+                    
+                    if self.uCost >  self.uCoins:
+                        print("Sorry. You don't have enough money.")
+                    else:
+                        self.uCoins -= self.uCost
+                        print("RECEIPT:")
+                        print("You've bought " + ' ,'.join(self.uCart))
+                        print("You paid " + str(self.uCost))
+
+                    self.uCart = []
+                    self.uCost = 0
+                    
+
+        return loop
+
+   
+    #-----------------------------------------------------------------------
+    def runLogic(self):
+
+        # CHECK WHICH ITEM OR BUTTON IS SELECTED
+        mousePosition = pygame.mouse.get_pos()
+        mouseX = mousePosition[0]
+        mouseY = mousePosition[1]
+
+        print(self.cHover)
+
+        # ITEMS
+        if self.cHover:
+            for row in range(50,SCREEN_WIDTH,200):
+                if inO(mouseX,mouseY,row,100,100,100):
+                    self.cChoice = self.gList[(row - 50)//200]
+                    self.uCart.append(self.cChoice)
+                    
+                if inO(mouseX,mouseY,row,300,100,100):
+                    self.cChoice = self.poList[(row - 50)//200]
+                    self.uCart.append(self.cChoice)
+                    
+                if inO(mouseX,mouseY,row,500,100,100):
+                    self.cChoice = self.sList[(row - 50)//200]
+                    self.uCart.append(self.cChoice)
+                    
+            self.cHover = False
+            
+
+
+        # PAY
+        if inO(mouseX,mouseY,440,20,80,60):
+            self.payHover = True
+        else:
+            self.payHover = False
+
+
+    #-----------------------------------------------------------------------
+    def displayFrame(self):
+        # DRAW
+        self.screen.fill(COLOUR[WHITE])
+
+        # SET FONT 
+        self.font = pygame.font.SysFont('Agency FB',50)
+        self.font2 = pygame.font.SysFont('Agency FB',25)
+
+        # BASIC TEXTS/ BUTTON
+        self.shop = self.font.render("SHOP",True,COLOUR[BLACK])
+        self.screen.blit(self.shop,[50,20])
+        self.uCoinsT = self.font.render("COINS $" + str(self.uCoins), True,COLOUR[BLACK])
+        self.screen.blit(self.uCoinsT,[550,20])
+
+        # PAY
+        self.pay = self.font.render("PAY",True,COLOUR[BLACK])
+        self.screen.blit(self.pay,[450,20])
+        pygame.draw.rect(self.screen,WHITE,(440,20,80,60),5)
+
+        if self.payHover:
+            pygame.draw.rect(self.screen,BLACK,(440,20,80,60))
+            self.pay = self.font.render("PAY",True,COLOUR[WHITE])
+            self.screen.blit(self.pay,[450,20])
+
+        # CART 
+        pygame.draw.rect(self.screen,WHITE,(150,20,270,60),5)
+        for i in range(len(self.uCart)):
+            image = pygame.transform.scale(pygame.image.load('G-sMan('+str(self.uCart[i])+').png'),(35,35))
+            self.screen.blit(image,[160 + i * 40,30])
+            
+
+        # ITEMS
+        for row in range(50,SCREEN_WIDTH,200):
+            
+            #for col in range(100,SCREEN_HEIGHT,200):
+
+            # IMAGES
+            self.screen.blit(self.iGList[(row - 50)//200],[row,100])
+            self.screen.blit(self.iPoList[(row - 50)//200],[row,300])
+            self.screen.blit(self.iSList[(row - 50)//200],[row,500])
+            
+            # TEXT
+            self.gText = self.font2.render(self.gList[(row - 50)//200],True,COLOUR[BLACK])
+            self.pGText = self.font2.render(self.pGList[(row - 50)//200],True,COLOUR[BLACK])
+            self.poText = self.font2.render(self.poList[(row - 50)//200],True,COLOUR[BLACK])
+            self.poPText = self.font2.render(self.pPoList[(row - 50)//200],True,COLOUR[BLACK])
+            self.sText = self.font2.render(self.sList[(row - 50)//200],True,COLOUR[BLACK])
+            self.sPText = self.font2.render(self.sPList[(row - 50)//200],True,COLOUR[BLACK])
+ 
+            self.screen.blit(self.gText,[row,100 + 100])
+            self.screen.blit(self.pGText,[row,100 + 125])
+            self.screen.blit(self.poText,[row,300 + 100])
+            self.screen.blit(self.poPText,[row,300 + 125])
+            self.screen.blit(self.sText,[row,500 + 100])
+            self.screen.blit(self.sPText,[row,500 + 125])
+
+
+        # UPDATE SCREEN
+        pygame.display.flip()
+
+#------------------------------------------------------------------------------------------------------------------------------- 
+# CALL GAME
+Game()
