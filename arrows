@@ -1,0 +1,136 @@
+
+
+import pygame
+import math
+import random
+
+#GLOBAL
+COLOUR = [(255,255,255),(0,0,0),(96,96,96),
+          (255,0,0),(0,255,0),(0,0,255),
+          (255,255,0),(255,0,255),(255,120,0)]
+
+WHITE = 0
+BLACK = 1
+GREY = 2
+RED = 3
+GREEN = 4
+BLUE = 5
+YELLOW = 6
+PURPLE = 7
+ORANGE =8
+
+SCREEN_WIDTH = 1300
+SCREEN_HEIGHT = 500
+SCREEN_SIZE = (SCREEN_WIDTH,SCREEN_HEIGHT)
+
+#GAME CLASS
+class Game():
+    def __init__(self):
+        global SCREEN_WIDTH
+        global SCREEN_HEIGHT
+
+        #Initialize
+        pygame.init()
+        self.screen = pygame.display.set_mode(SCREEN_SIZE)
+        clock = pygame.time.Clock()
+
+        self.initialize()
+
+        loop = True
+        while loop:
+            # Process Events/ Game Logic/ Draw/ Pause
+            loop = self.processEvents()
+            self.runLogic()
+            self.displayFrame()
+            clock.tick(30)
+
+        pygame.quit()
+
+    def initialize(self):
+
+        self.angle = 0
+        self.clicked = False
+        self.x2 = 300
+        self.y2 = 300
+        self.cAngle = None
+        
+        
+
+
+    def processEvents(self):
+
+        loop = True
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                loop = False
+
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                self.clicked = True
+                self.cAngle = self.angle
+            
+
+            
+                
+
+        return loop
+
+    def runLogic(self):
+
+        self.mousePostion = pygame.mouse.get_pos()
+        self.mouseX = self.mousePostion[0]
+        self.mouseY = self.mousePostion[1]
+
+        self.xDiff = self.mouseX - 300
+        self.yDiff = self.mouseY - 300
+
+        # DIVIDED BY 0
+        if self.xDiff == 0:
+            self.xDiff = 1
+
+        self.ratio = self.yDiff / self.xDiff
+        self.angle = math.degrees(math.atan(self.ratio))
+        self.distance = math.sqrt( math.pow(self.xDiff,2) + math.pow(self.yDiff,2))
+
+        
+        if self.angle > 80:
+            self.angle = 80
+
+        if self.angle < -80:
+            self.angle = -80
+
+        self.x = 300 +  math.cos(math.radians(self.angle)) * 150
+        self.y = 300 +  math.sin(math.radians(self.angle)) * 150
+
+
+        if self.clicked:
+            self.dx = 100*math.cos(math.radians(self.cAngle))
+            self.dy = 100*math.sin(math.radians(self.cAngle))
+            self.x2 += self.dx
+            self.y2 += self.dy
+            self.tempX = self.x2 +  math.cos(math.radians(self.cAngle)) * 150
+            self.tempY = self.y2 +  math.sin(math.radians(self.cAngle)) * 150
+        else:
+            self.tempX = self.x
+            self.tempY = self.y
+
+        if self.tempX > SCREEN_WIDTH:
+            self.x2 = 300
+            self.y2 = 300
+            self.clicked = False
+
+        print(self.x2)
+       
+        
+    def displayFrame(self):
+
+        self.screen.fill(COLOUR[WHITE])
+
+        pygame.draw.line(self.screen,BLACK,[300,300],[self.x,self.y],10)
+        if self.clicked:
+            pygame.draw.line(self.screen,BLACK,[self.x2,self.y2],[self.tempX,self.tempY],10)
+        pygame.display.flip()
+
+#GAME
+Game()
+
+   
